@@ -14,7 +14,6 @@
 package io.trino.plugin.bigquery;
 
 import com.google.cloud.bigquery.TableResult;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import io.airlift.log.Logger;
 import io.trino.plugin.bigquery.BigQueryQueryRunner.BigQuerySqlExecutor;
@@ -53,9 +52,6 @@ public class TestBigQueryInstanceCleaner
             .map(TpchTable::getTableName)
             .map(s -> s.toLowerCase(Locale.ENGLISH))
             .collect(toUnmodifiableSet());
-
-    // see https://cloud.google.com/bigquery/docs/information-schema-tables#tables_view for possible values
-    public static final Collection<String> tableTypesToDrop = ImmutableList.of("BASE TABLE", "VIEW", "MATERIALIZED VIEW", "SNAPSHOT");
 
     protected BigQuerySqlExecutor bigQuerySqlExecutor;
 
@@ -114,11 +110,9 @@ public class TestBigQueryInstanceCleaner
                         "SELECT table_name, table_type " +
                         "FROM %s.INFORMATION_SCHEMA.TABLES " +
                         "WHERE datetime_diff(current_datetime(), datetime(creation_time), HOUR) > 24 " +
-                        "AND table_name NOT IN (%s)" +
-                        "AND table_type IN (%s)",
+                        "AND table_name NOT IN (%s)",
                 quoted(schemaName),
-                tablesToKeep.stream().collect(joining("','", "'", "'")),
-                tableTypesToDrop.stream().collect(joining("','", "'", "'"))));
+                tablesToKeep.stream().collect(joining("','", "'", "'"))));
         List<Entry<String, String>> objectsToDrop = Streams.stream(result.getValues())
                 .map(fieldValues -> new SimpleImmutableEntry<>(fieldValues.get("table_name").getStringValue(), fieldValues.get("table_type").getStringValue()))
                 .collect(toImmutableList());
